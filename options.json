@@ -1,0 +1,59 @@
+{
+  "User": "joe",
+  "Password": "password",
+  "DB": "test",
+  "SSLDisable": true,
+  "Host": "localhost",
+  "Port": 5432,
+  "Driver": "postgres",
+  "Filename": "Pear3.csv",
+  "ColumnDelimeter": "|",
+  "LineEnd": "\r",
+  "Bulk": true,
+  "TableName": "aa_user_entitlement",
+  "DeleteTable": true,
+  "CreateTable": true,
+  "TableData": [
+    {
+        "ColumnName": "eid",
+        "ColumnDef": "varchar(128)"
+    },
+    {
+        "ColumnName": "application_name",
+        "ColumnDef": "varchar(128)"
+    },
+    {
+        "ColumnName": "entitlement_name",
+        "ColumnDef": "varchar(1000)"
+    },
+
+    {
+        "ColumnName": "entitlement_display_value",
+        "ColumnDef": "varchar(450)"
+    },
+    {
+        "ColumnName": "entitlement_formal_value",
+        "ColumnDef": "varchar(1000)"
+    },
+    {
+        "ColumnName": "login_id",
+        "ColumnDef": "varchar(255)"
+    },
+    {
+        "ColumnName": "granted_by_role",
+        "ColumnDef": "numeric(18)"
+    },
+    {
+        "ColumnName": "entitlement_type",
+        "ColumnDef": "varchar(255)"
+    },
+    {
+        "ColumnName": "etl_create_date",
+        "ColumnDef": "date"
+    },
+    {
+        "ColumnName": "edw_publn_id",
+        "ColumnDef": "numeric(18)"
+    }
+  ]
+}

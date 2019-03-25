@@ -1,0 +1,10 @@
+{"User":"joe","Password":"password","DB":"test","SSLDisable":true,"Host":"localhost","Port":5432,"Driver":"postgres","Filename":"Pear3.csv","ColumnDelimeter":"|","LineEnd":"\r","Fields":["eid","application_name","entitlement_name","entitlement_display_value","entitlement_formal_value","login_id","granted_by_role","entitlement_type","etl_create_date","edw_publn_id"],"Bulk":true,"TableName":"aa_user_entitlement","RecreateTable":true,
+
+  "TableData":[
+    {
+      "ColumnName":"",
+      "ColumnDef":"",
+    },{
+      "ColumnName":"a",
+      "ColumnDef":"",
+    },{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""},{"ColumnName":"","ColumnDef":""}]}
