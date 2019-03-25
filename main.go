@@ -83,7 +83,7 @@ func main() {
 	}
 
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s %s host=%s port=%d", options.User, options.Password, options.DB, ssl, options.Host, options.Port)
-	fmt.Println(connStr)
+	//fmt.Println(connStr)
 	db, pgerr := sql.Open(options.Driver, connStr)
 	if pgerr != nil {
 		log.Fatal(pgerr)
@@ -162,7 +162,6 @@ func insertRecords(db *sql.DB, records [][]string, insertStatement string) {
 
 func DoSQL(db *sql.DB, s string) error {
 	stmt, r := db.Prepare(s)
-	fmt.Println("---> Try to run:", s)
 	if r == nil {
 		stmt.Exec()
 		return nil
