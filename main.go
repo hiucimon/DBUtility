@@ -19,15 +19,15 @@ var tableName string
 var insertStatement string
 
 func main() {
-	args:=os.Args[1:]
-	if len(args)!=1 {
+	args := os.Args[1:]
+	if len(args) != 1 {
 		log.Fatal("Usage: loadDB {optionsfile}\n\twhere optionsfile if a json file containing the optins to load the data. (see example)")
 	}
-	options:=loadOptions(args[0])
+	options := loadOptions(args[0])
 	var valsTemp bytes.Buffer
 	var insertTemp bytes.Buffer
 	var createTemp bytes.Buffer
-	dlm:=""
+	dlm := ""
 	insertTemp.WriteString("INSERT INTO ")
 	insertTemp.WriteString(options.TableName)
 	insertTemp.WriteString(" (\n")
@@ -36,16 +36,16 @@ func main() {
 	createTemp.WriteString(options.TableName)
 	createTemp.WriteString(" (\n")
 
-	for i,_ := range options.TableData {
+	for i, _ := range options.TableData {
 
-		t:=fmt.Sprintf("$%d",i+1)
+		t := fmt.Sprintf("$%d", i+1)
 		valsTemp.WriteString(dlm)
 		valsTemp.WriteString(t)
-		dlm=","
+		dlm = ","
 
 		insertTemp.WriteString("\t")
 		insertTemp.WriteString(options.TableData[i].ColumnName)
-		if i< len(options.TableData)-1 {
+		if i < len(options.TableData)-1 {
 			insertTemp.WriteString(",")
 		} else {
 			insertTemp.WriteString(") VALUES (")
@@ -57,65 +57,63 @@ func main() {
 		createTemp.WriteString("\t")
 		createTemp.WriteString(options.TableData[i].ColumnName)
 
-		cols=append(cols,options.TableData[i].ColumnName)
+		cols = append(cols, options.TableData[i].ColumnName)
 		createTemp.WriteString("\t")
 		createTemp.WriteString(options.TableData[i].ColumnDef)
-		if i< len(options.TableData)-1 {
+		if i < len(options.TableData)-1 {
 			createTemp.WriteString(",")
 		}
 		createTemp.WriteString("\n")
 	}
-	insertStatement=insertTemp.String()
+	insertStatement = insertTemp.String()
 	createTemp.WriteString(")\n")
-	createStmt:=createTemp.String()
+	createStmt := createTemp.String()
 	//cols=options.TableData
-	tableName =options.TableName
-	bulk:=options.Bulk
+	tableName = options.TableName
+	bulk := options.Bulk
 	var ssl string
 	if options.SSLDisable {
-		ssl="sslmode=disable"
+		ssl = "sslmode=disable"
 	} else {
-		ssl=" "
+		ssl = " "
 	}
-	records,err:=parseCSV(options.Filename,options.ColumnDelimeter,options.LineEnd)
+	records, err := parseCSV(options.Filename, options.ColumnDelimeter, options.LineEnd)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	connStr:=fmt.Sprintf("user=%s password=%s dbname=%s %s host=%s port=%d",options.User,options.Password,options.DB,ssl,options.Host,options.Port)
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s %s host=%s port=%d", options.User, options.Password, options.DB, ssl, options.Host, options.Port)
 	fmt.Println(connStr)
-	db,pgerr:=sql.Open(options.Driver,connStr)
-	if pgerr!=nil {
+	db, pgerr := sql.Open(options.Driver, connStr)
+	if pgerr != nil {
 		log.Fatal(pgerr)
 	}
 	if options.DeleteTable {
-		DoSQL(db,fmt.Sprintf("DROP TABLE IF EXISTS %s",options.TableName))
+		DoSQL(db, fmt.Sprintf("DROP TABLE IF EXISTS %s", options.TableName))
 	}
 	if options.CreateTable {
-		cerr:=DoSQL(db,createStmt)
-		if cerr!=nil {
+		cerr := DoSQL(db, createStmt)
+		if cerr != nil {
 			log.Fatal(cerr)
 		}
 	} else {
-		DoSQL(db,fmt.Sprintf("truncate %s RESTART IDENTITY",options.TableName))
+		DoSQL(db, fmt.Sprintf("truncate %s RESTART IDENTITY", options.TableName))
 	}
 
 	if bulk {
-		bulkInsertRecords(db,records)
+		bulkInsertRecords(db, records)
 	} else {
-		insertRecords(db,records,insertStatement)
+		insertRecords(db, records, insertStatement)
 	}
-
 
 }
 
-func bulkInsertRecords(db *sql.DB,records [][]string) {
+func bulkInsertRecords(db *sql.DB, records [][]string) {
 	txn, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	//cols:=[]string{ "eid", "application_name", "entitlement_name", "entitlement_display_value", "entitlement_formal_value", "login_id", "granted_by_role", "entitlement_type", "etl_create_date", "edw_publn_id"}
-	stmt, err := txn.Prepare(pq.CopyIn(tableName,cols...))
+	stmt, err := txn.Prepare(pq.CopyIn(tableName, cols...))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,10 +121,8 @@ func bulkInsertRecords(db *sql.DB,records [][]string) {
 	for _, s := range records {
 		var anything []interface{}
 		for _, val := range s {
-			anything = append( anything , val )
+			anything = append(anything, val)
 		}
-		//_, err = stmt.Exec(s[0],s[1],s[2],s[3],s[4],s[5],s[6],s[7],s[8],s[9]) //
-
 		_, err = stmt.Exec(anything...)
 		if err != nil {
 			log.Fatal(err)
@@ -149,38 +145,25 @@ func bulkInsertRecords(db *sql.DB,records [][]string) {
 	}
 }
 
-func insertRecords(db *sql.DB,records [][]string,insertStatement string) {
-	//cnt:=0
-	//limit:=true
+func insertRecords(db *sql.DB, records [][]string, insertStatement string) {
 	for _, s := range records {
-		//if (len(s)!=10) {
-		//	fmt.Println("Invalid number of columns:",i, s)
-		//}
-		//id:=""
 		var anything []interface{}
 		for _, val := range s {
-			anything = append( anything , val )
+			anything = append(anything, val)
 		}
 
-		eerr:=db.QueryRow(insertStatement,anything) //.Scan(&id)
-		if eerr!=nil {
-			//fmt.Println("Error on line ",i+1,eerr)
-			//for _,c:=range s {
-			//	fmt.Println("--->", c, "<---")
-			//}
+		eerr := db.QueryRow(insertStatement, anything) //.Scan(&id)
+		if eerr != nil {
 			log.Fatal(eerr)
 		}
-		//cnt=cnt+1
-		//if (limit==true && cnt>10000) {return}
 	}
-
 
 }
 
-func DoSQL(db *sql.DB,s string) error {
-	stmt,r:=db.Prepare(s)
-	fmt.Println("---> Try to run:",s)
-	if r==nil {
+func DoSQL(db *sql.DB, s string) error {
+	stmt, r := db.Prepare(s)
+	fmt.Println("---> Try to run:", s)
+	if r == nil {
 		stmt.Exec()
 		return nil
 	} else {
@@ -188,25 +171,23 @@ func DoSQL(db *sql.DB,s string) error {
 	}
 }
 
-
-func parseCSV(fn string,dlm string,eol string) ([][]string, error){
-	if eol=="" {
-		eol="\r"
+func parseCSV(fn string, dlm string, eol string) ([][]string, error) {
+	if eol == "" {
+		eol = "\r"
 	}
-	if dlm=="" {
-		dlm=","
+	if dlm == "" {
+		dlm = ","
 	}
 	b, err := ioutil.ReadFile(fn) // just pass the file name
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
-	if (!utf8.Valid(b)) {
+	if !utf8.Valid(b) {
 		fmt.Println("There is invalid data")
-		return nil,nil
+		return nil, nil
 	}
-	r:=csv.NewReader(strings.NewReader(string(b)))
-	r.Comma=[]rune(dlm)[0]
+	r := csv.NewReader(strings.NewReader(string(b)))
+	r.Comma = []rune(dlm)[0]
 	records, err := r.ReadAll()
-	return records,err
+	return records, err
 }
-
