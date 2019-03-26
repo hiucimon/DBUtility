@@ -5,18 +5,21 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
 var cols []string
 var tableName string
 var insertStatement string
+var driver string
 
 func main() {
 	args := os.Args[1:]
@@ -24,6 +27,7 @@ func main() {
 		log.Fatal("Usage: loadDB {optionsfile}\n\twhere optionsfile if a json file containing the optins to load the data. (see example)")
 	}
 	options := loadOptions(args[0])
+	driver = options.Driver
 	var valsTemp bytes.Buffer
 	var insertTemp bytes.Buffer
 	var createTemp bytes.Buffer
@@ -37,8 +41,12 @@ func main() {
 	createTemp.WriteString(" (\n")
 
 	for i, _ := range options.TableData {
-
-		t := fmt.Sprintf("$%d", i+1)
+		var t string
+		if driver == "postgres" {
+			t = fmt.Sprintf("$%d", i+1)
+		} else {
+			t = "?"
+		}
 		valsTemp.WriteString(dlm)
 		valsTemp.WriteString(t)
 		dlm = ","
@@ -66,6 +74,7 @@ func main() {
 		createTemp.WriteString("\n")
 	}
 	insertStatement = insertTemp.String()
+	fmt.Println(insertStatement)
 	createTemp.WriteString(")\n")
 	createStmt := createTemp.String()
 	//cols=options.TableData
@@ -81,11 +90,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var connStr string
+	if driver == "postgres" {
+		connStr = fmt.Sprintf("user=%s password=%s dbname=%s %s host=%s port=%d", options.User, options.Password, options.DB, ssl, options.Host, options.Port)
+		//fmt.Println(connStr)
+	} else {
+		if options.Driver == "mysql" {
+			connStr = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", options.User, options.Password, options.Host, options.Port, options.DB)
+			fmt.Println(connStr)
+		}
+		//os.Exit(8)
+	}
 
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s %s host=%s port=%d", options.User, options.Password, options.DB, ssl, options.Host, options.Port)
-	//fmt.Println(connStr)
 	db, pgerr := sql.Open(options.Driver, connStr)
 	if pgerr != nil {
+		fmt.Println("1")
 		log.Fatal(pgerr)
 	}
 	if options.DeleteTable {
@@ -94,6 +113,7 @@ func main() {
 	if options.CreateTable {
 		cerr := DoSQL(db, createStmt)
 		if cerr != nil {
+			fmt.Println("2")
 			log.Fatal(cerr)
 		}
 	} else {
@@ -151,10 +171,19 @@ func insertRecords(db *sql.DB, records [][]string, insertStatement string) {
 		for _, val := range s {
 			anything = append(anything, val)
 		}
-
-		eerr := db.QueryRow(insertStatement, anything) //.Scan(&id)
-		if eerr != nil {
-			log.Fatal(eerr)
+		if driver == "postgres" {
+			eerr := db.QueryRow(insertStatement, anything)
+			if eerr != nil {
+				fmt.Println("3")
+				fmt.Println(eerr.Scan())
+				log.Fatal(eerr)
+			}
+		} else {
+			fmt.Println("Try mysql")
+			_, merr := db.Exec(insertStatement, "a", "a", "a", "a", "a", "a", 1, "a", time.Now(), 3)
+			if merr != nil {
+				log.Fatal(merr.Error()) // proper error handling instead of panic in your app
+			}
 		}
 	}
 
@@ -166,6 +195,7 @@ func DoSQL(db *sql.DB, s string) error {
 		stmt.Exec()
 		return nil
 	} else {
+		fmt.Println(r.Error())
 		return r
 	}
 }
